@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-st.title("Ejercicio 1: Titanic con botón y gráfico")
+st.title("Ejercicio 3: Titanic con subplots 2x2")
 
 @st.cache_data
 def cargar_datos():
@@ -12,59 +12,62 @@ def cargar_datos():
 
 df = cargar_datos()
 
-st.write("Usamos el dataset de pasajeros del Titanic")
+st.write("Ejemplo de uso de subplots para partir la figura en 4 zonas")
 
-# Contenedor para controles
-with st.container():
-    st.subheader("Configuración del gráfico")
+# Limpiamos algunos datos
+df_edad = df[df["Age"].notna()]
+df_fare = df[df["Fare"].notna()]
 
-    col1, col2 = st.columns(2)
+# Creamos figura con 4 zonas
+fig, axes = plt.subplots(2, 2, figsize=(10, 8))
 
-    with col1:
-        max_edad = st.slider(
-            "Máxima edad a considerar",
-            min_value=int(df["Age"].min(skipna=True)),
-            max_value=int(df["Age"].max(skipna=True)),
-            value=40,
-            step=1
-        )
+# Zona 1 (arriba izquierda): histograma de edades
+ax1 = axes[0, 0]
+edades = df_edad["Age"]
+bins_edad = np.linspace(edades.min(), edades.max(), 20)
 
-    with col2:
-        variable_grupo = st.selectbox(
-            "Variable para agrupar la tasa de supervivencia",
-            ("Sex", "Pclass", "Embarked")
-        )
+ax1.hist(edades, bins=bins_edad)
+ax1.set_title("Histograma de Edad")
+ax1.set_xlabel("Edad")
+ax1.set_ylabel("Frecuencia")
 
-# Segundo contenedor para botón y resultado
-with st.container():
-    st.subheader("Gráfico de tasa de supervivencia")
+# Zona 2 (arriba derecha): histograma de tarifas
+ax2 = axes[0, 1]
+fares = df_fare["Fare"]
+bins_fare = np.linspace(fares.min(), fares.max(), 20)
 
-    if st.button("Generar gráfico"):
-        # Filtramos por edad
-        df_filtrado = df[df["Age"] <= max_edad].copy()
+ax2.hist(fares, bins=bins_fare)
+ax2.set_title("Histograma de Fare")
+ax2.set_xlabel("Fare")
+ax2.set_ylabel("Frecuencia")
 
-        # Agrupamos y calculamos tasa de supervivencia
-        tasa = df_filtrado.groupby(variable_grupo)["Survived"].mean() * 100
-        tasa = tasa.dropna()
+# Zona 3 (abajo izquierda): supervivencia por sexo
+ax3 = axes[1, 0]
+tasa_sexo = df.groupby("Sex")["Survived"].mean() * 100
 
-        st.write("Tabla de tasas de supervivencia (%)")
-        st.dataframe(tasa.round(2).reset_index())
+x3 = np.arange(len(tasa_sexo.index))
+ax3.bar(x3, tasa_sexo.values)
+ax3.set_xticks(x3)
+ax3.set_xticklabels(tasa_sexo.index)
+ax3.set_ylabel("Supervivencia (%)")
+ax3.set_title("Supervivencia por Sexo")
 
-        # Creamos el gráfico con matplotlib
-        fig, ax = plt.subplots()
+# Zona 4 (abajo derecha): supervivencia por clase
+ax4 = axes[1, 1]
+tasa_clase = df.groupby("Pclass")["Survived"].mean() * 100
 
-        x = tasa.index.astype(str)
-        y = tasa.values
+x4 = np.arange(len(tasa_clase.index))
+ax4.bar(x4, tasa_clase.values)
+ax4.set_xticks(x4)
+ax4.set_xticklabels(tasa_clase.index)
+ax4.set_ylabel("Supervivencia (%)")
+ax4.set_title("Supervivencia por Clase")
 
-        # Solo para usar numpy de forma visible
-        posiciones = np.arange(len(x))
+plt.tight_layout()
+st.pyplot(fig)
 
-        ax.bar(posiciones, y)
-        ax.set_xticks(posiciones)
-        ax.set_xticklabels(x, rotation=0)
-        ax.set_ylabel("Supervivencia (%)")
-        ax.set_title(f"Tasa de supervivencia por {variable_grupo} (edad ≤ {max_edad})")
-
-        st.pyplot(fig)
-    else:
-        st.info("Configura los parámetros y pulsa el botón para ver el gráfico")
+st.info(
+    "Tip: si quieres otra distribución, por ejemplo pantalla en 1x2 o 2x1, "
+    "puedes cambiar `plt.subplots(2, 2, ...)` por `(1, 2)` o `(2, 1)` "
+    "y ajustar los índices `axes[fila, columna]`."
+)

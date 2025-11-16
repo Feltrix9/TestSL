@@ -1,61 +1,69 @@
-
 import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-st.title("Ejercicio 1: Gráfico interactivo con particiones")
+st.title("Ejercicio 2: Tabla y slider en la barra lateral")
 
-st.write("Este ejemplo usa pandas, numpy y matplotlib con layout por columnas")
+st.write("Ejemplo de tabla filtrada usando un slider en la sidebar")
 
-# Contenedor principal
-with st.container():
-    st.subheader("Configuración del gráfico")
+# Crear datos de ejemplo con pandas y numpy
+np.random.seed(42)
+n_filas = 200
 
-    # Particiones con columnas
-    col1, col2 = st.columns(2)
+df = pd.DataFrame({
+    "id": np.arange(1, n_filas + 1),
+    "edad": np.random.randint(18, 65, size=n_filas),
+    "puntaje": np.random.normal(loc=50, scale=10, size=n_filas).round(1)
+})
 
-    with col1:
-        n_puntos = st.slider(
-            "Número de puntos",
-            min_value=10,
-            max_value=300,
-            value=100,
-            step=10
-        )
+# Controles en la sidebar
+with st.sidebar:
+    st.header("Filtros")
 
-    with col2:
-        n_series = st.slider(
-            "Número de series",
-            min_value=1,
-            max_value=5,
-            value=3,
-            step=1
-        )
+    edad_min, edad_max = int(df["edad"].min()), int(df["edad"].max())
+    rango_edad = st.slider(
+        "Rango de edad",
+        min_value=edad_min,
+        max_value=edad_max,
+        value=(25, 40)
+    )
 
-# Segundo contenedor para botón y resultado
-with st.container():
-    st.subheader("Generación de datos y gráfico")
+    puntaje_min = float(df["puntaje"].min())
+    puntaje_max = float(df["puntaje"].max())
+    umbral_puntaje = st.slider(
+        "Puntaje mínimo",
+        min_value=puntaje_min,
+        max_value=puntaje_max,
+        value=50.0
+    )
 
-    if st.button("Generar nuevo gráfico"):
-        # Generar DataFrame con numpy y pandas
-        index = np.arange(n_puntos)
-        data = {
-            f"serie_{i+1}": np.random.randn(n_puntos).cumsum()
-            for i in range(n_series)
-        }
-        df = pd.DataFrame(data, index=index)
+# Filtrar datos según sliders
+filtro = (
+    (df["edad"] >= rango_edad[0]) &
+    (df["edad"] <= rango_edad[1]) &
+    (df["puntaje"] >= umbral_puntaje)
+)
+df_filtrado = df[filtro]
 
-        st.write("Vista previa de los datos")
-        st.dataframe(df.head())
+st.subheader("Tabla filtrada")
 
-        # Crear gráfico con matplotlib
-        fig, ax = plt.subplots()
-        df.plot(ax=ax)
-        ax.set_xlabel("Índice")
-        ax.set_ylabel("Valor")
-        ax.set_title("Series aleatorias acumuladas")
+st.write(
+    f"Mostrando filas donde la edad está entre "
+    f"{rango_edad[0]} y {rango_edad[1]} "
+    f"y el puntaje es mayor o igual a {umbral_puntaje}"
+)
 
-        st.pyplot(fig)
-    else:
-        st.info("Mueve los sliders y presiona el botón para ver el gráfico")
+st.dataframe(df_filtrado)
+
+st.subheader("Distribución de puntajes filtrados")
+
+if not df_filtrado.empty:
+    fig, ax = plt.subplots()
+    ax.hist(df_filtrado["puntaje"], bins=15)
+    ax.set_xlabel("Puntaje")
+    ax.set_ylabel("Frecuencia")
+    ax.set_title("Histograma de puntajes filtrados")
+    st.pyplot(fig)
+else:
+    st.warning("No hay datos que coincidan con los filtros actuales")

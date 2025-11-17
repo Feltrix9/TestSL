@@ -22,7 +22,7 @@ st.write("Usamos el archivo **database_titanic.csv**")
 
 # ======================
 # SIDEBAR  → filtros
-# ======================
+# ====================== sidebar conteiner, columna expander 
 with st.sidebar:
     st.header("Filtros")
 
